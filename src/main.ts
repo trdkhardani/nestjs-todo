@@ -12,6 +12,7 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
   const configService = app.get(ConfigService);
+  app.enableCors();
   await app.listen(configService.get<number>('port') ?? 3000, '0.0.0.0');
 }
 bootstrap();

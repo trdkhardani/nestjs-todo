@@ -10,6 +10,7 @@ import configuration from './config/configuration';
 import { APP_FILTER, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { CatchEverythingFilter } from './filter/catch-everything.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -30,11 +31,10 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
     ]),
     AuthModule,
   ],
-  controllers: [AppController, AuthController],
+  controllers: [AppController],
   providers: [
     AppService,
     PrismaService,
-    AuthService,
     {
       provide: APP_FILTER,
       useClass: CatchEverythingFilter,

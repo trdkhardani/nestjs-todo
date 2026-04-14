@@ -11,4 +11,11 @@ export class AuthService {
       data,
     });
   }
+
+  async login(userWhere: Prisma.UserWhereInput, userSelect: Prisma.UserSelect): Promise<User | null> {
+    return await this.prisma.user.findFirst({
+      where: userWhere,
+      select: userSelect,
+    });
+  }
 }

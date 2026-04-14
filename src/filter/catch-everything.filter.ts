@@ -10,6 +10,7 @@ import { HttpAdapterHost } from '@nestjs/core';
 interface ErrorResponse {
   statusCode: HttpStatus;
   success: false;
+  data: null;
   message: unknown;
 }
 
@@ -33,6 +34,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
     const responseBody: ErrorResponse = {
       statusCode: httpStatus,
       success: false,
+      data: null,
       message:
         httpStatus >= 500
           ? 'Internal Server Error'

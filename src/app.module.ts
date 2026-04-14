@@ -11,6 +11,8 @@ import { APP_FILTER, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { CatchEverythingFilter } from './filter/catch-everything.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { JwtService } from '@nestjs/jwt';
+import { UserService } from './user/user.service';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -26,10 +28,15 @@ import { JwtService } from '@nestjs/jwt';
             path: 'auth',
             module: AuthModule,
           },
+          {
+            path: 'user',
+            module: UserModule,
+          },
         ],
       },
     ]),
     AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [
@@ -43,6 +50,7 @@ import { JwtService } from '@nestjs/jwt';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
+    UserService,
   ],
 })
 export class AppModule {}

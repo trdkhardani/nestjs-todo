@@ -20,4 +20,11 @@ export class TaskService {
       take: limit,
     });
   }
+
+  async getTaskById(taskWhere: Prisma.TaskWhereUniqueInput, taskSelect: Prisma.TaskSelect): Promise<Task | null> {
+    return await this.prisma.task.findUnique({
+      where: taskWhere,
+      select: taskSelect,
+    });
+  }
 }

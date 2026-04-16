@@ -27,4 +27,34 @@ export class TaskService {
       select: taskSelect,
     });
   }
+
+  async updateTask(taskWhere: Prisma.TaskWhereUniqueInput, data: Prisma.TaskUpdateInput): Promise<Task> {
+    return await this.prisma.task.update({
+      where: taskWhere,
+      data,
+    });
+  }
+
+  async checkUncheckTask(userId: string, taskId: string): Promise<Task> {
+    const task = await this.getTaskById(
+      {
+        task_id: taskId,
+        user_id: userId,
+      },
+      {
+        task_status: true,
+      },
+    );
+
+    return await this.updateTask(
+      {
+        task_id: taskId,
+        user_id: userId,
+      },
+      {
+        task_status:
+          task?.task_status === 'UNFINISHED' ? 'FINISHED' : 'UNFINISHED',
+      },
+    );
+  }
 }

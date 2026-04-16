@@ -16,3 +16,11 @@ export const GetTasksSchema = z.object({
 });
 
 export type GetTasksDto = z.infer<typeof GetTasksSchema>;
+
+export const UpdateTaskSchema = z.object({
+  taskTitle: z.string().max(30).optional().optional(),
+  taskDescription: z.string().max(30).optional(),
+  taskCategoryId: z.uuid().optional().nullable(),
+});
+
+export type UpdateTaskDto = z.infer<typeof UpdateTaskSchema>;

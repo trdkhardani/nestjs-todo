@@ -3,16 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
-import { AuthService } from './auth/auth.service';
-import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
 import configuration from './config/configuration';
 import { APP_FILTER, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { CatchEverythingFilter } from './filter/catch-everything.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
-import { JwtService } from '@nestjs/jwt';
 import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -32,11 +30,16 @@ import { UserModule } from './user/user.module';
             path: 'user',
             module: UserModule,
           },
+          {
+            path: 'tasks',
+            module: TaskModule,
+          },
         ],
       },
     ]),
     AuthModule,
     UserModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [

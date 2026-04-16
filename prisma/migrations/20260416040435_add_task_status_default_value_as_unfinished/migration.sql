@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Task" ALTER COLUMN "task_status" SET DEFAULT 'UNFINISHED';

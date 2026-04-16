@@ -4,6 +4,7 @@ import { type LoginDto, RegisterSchema, type RegisterDto, LoginSchema } from 'sr
 import * as bcrypt from 'bcrypt';
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe';
 import { JwtService } from '@nestjs/jwt';
+import { ResponseInterface } from 'src/interface/response';
 
 @Controller()
 export class AuthController {
@@ -14,7 +15,7 @@ export class AuthController {
 
   @Post('register')
   @UsePipes(new ZodValidationPipe(RegisterSchema))
-  async register(@Body() registerDto: RegisterDto): Promise<object> {
+  async register(@Body() registerDto: RegisterDto): Promise<ResponseInterface> {
     const hashedPassword = await bcrypt.hash(registerDto.userPassword, 10);
 
     const registerUser = await this.authService.register({
@@ -37,7 +38,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginSchema))
-  async login(@Body() loginDto: LoginDto): Promise<object> {
+  async login(@Body() loginDto: LoginDto): Promise<ResponseInterface> {
     const login = await this.authService.login(
       {
         OR: [
@@ -56,6 +57,8 @@ export class AuthController {
       },
     );
 
+    console.log('loginDto.userPassword, login?.user_password as string');
+    console.log(loginDto.userPassword, login?.user_password as string);
     const checkPassword = await bcrypt.compare(loginDto.userPassword, login?.user_password as string);
 
     if (!checkPassword) {
@@ -68,8 +71,7 @@ export class AuthController {
       userId: login?.user_id,
       userName: login?.user_name,
     };
-    console.log('this.jwtService.sign(payload): ');
-    console.log(this.jwtService.sign(payload));
+
     return {
       success: true,
       data: {

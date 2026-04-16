@@ -57,6 +57,12 @@ export class AuthController {
       },
     );
 
+    if (!login) {
+      throw new UnauthorizedException('Invalid username/email or password.', {
+        description: 'Invalid Credentials Error',
+      });
+    }
+
     console.log('loginDto.userPassword, login?.user_password as string');
     console.log(loginDto.userPassword, login?.user_password as string);
     const checkPassword = await bcrypt.compare(loginDto.userPassword, login?.user_password as string);

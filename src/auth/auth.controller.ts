@@ -63,8 +63,6 @@ export class AuthController {
       });
     }
 
-    console.log('loginDto.userPassword, login?.user_password as string');
-    console.log(loginDto.userPassword, login?.user_password as string);
     const checkPassword = await bcrypt.compare(loginDto.userPassword, login?.user_password as string);
 
     if (!checkPassword) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { UserService } from './user.service';
 import type { UserPayload } from 'src/interface/auth';
@@ -72,6 +72,21 @@ export class UserController {
         userName: updatePassword.user_name,
       },
       message: 'Password changed successfully.',
+    };
+  }
+
+  @Delete()
+  async deleteUser(@Req() req: UserPayload): Promise<ResponseInterface> {
+    const deleteUser = await this.userService.deleteUser({
+      user_id: req.user.userId,
+    });
+
+    return {
+      success: true,
+      data: {
+        userId: deleteUser.user_id,
+      },
+      message: 'User deleted successfully.',
     };
   }
 }

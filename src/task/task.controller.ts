@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { TaskService } from './task.service';
 import { ResponseInterface } from 'src/interface/response';
@@ -99,12 +99,6 @@ export class TaskController {
         },
       },
     );
-
-    if (!task) {
-      throw new NotFoundException('Task not found.', {
-        description: `No Task with task_id ${taskId} Found.`,
-      });
-    }
 
     return {
       success: true,

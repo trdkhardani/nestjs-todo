@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { TaskService } from './task.service';
 import { ResponseInterface } from 'src/interface/response';
@@ -158,6 +158,25 @@ export class TaskController {
         taskStatus: checkTask.task_status,
       },
       message: `Task ${checkTask.task_status === 'FINISHED' ? 'checked' : 'unchecked'}.`,
+    };
+  }
+
+  @Delete(':taskId')
+  async deleteTask(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface> {
+    const taskDeletion = await this.taskService.deleteTask({
+      task_id: taskId,
+      user_id: req.user.userId,
+    });
+
+    return {
+      success: true,
+      data: {
+        data: {
+          taskId: taskDeletion.task_id,
+          taskTitle: taskDeletion.task_title,
+        },
+      },
+      message: 'Task deleted successfully.',
     };
   }
 }

@@ -11,6 +11,7 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
 import { TaskModule } from './task/task.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -34,12 +35,17 @@ import { TaskModule } from './task/task.module';
             path: 'tasks',
             module: TaskModule,
           },
+          {
+            path: 'categories',
+            module: CategoryModule,
+          },
         ],
       },
     ]),
     AuthModule,
     UserModule,
     TaskModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [

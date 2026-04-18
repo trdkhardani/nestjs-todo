@@ -36,14 +36,36 @@ export class CategoryController {
   }
 
   @Get()
-  findAll() {
-    return this.categoryService.findAll();
+  async getCategories(@Req() req: UserPayload): Promise<ResponseInterface> {
+    const categories = await this.categoryService.getCategories(
+      {
+        OR: [
+          {
+            user_id: req.user.userId,
+          },
+          {
+            user_id: null,
+          },
+        ],
+      },
+      {
+        category_id: true,
+        category_name: true,
+      },
+    );
+
+    return {
+      success: true,
+      data: categories,
+      message: 'Categories retrieved successfully',
+    };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.categoryService.findOne(+id);
-  }
+  // @Get(':categoryId')
+  // async getCategoryById(@Param('categoryId') categoryId: string): Promise<ResponseInterface> {
+  //   const category = await this.categoryService.getCategoryById();
+  //   return
+  // }
 
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {

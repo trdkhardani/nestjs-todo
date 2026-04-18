@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
 // import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/prisma.service';
 import { Category, Prisma } from 'generated/prisma/client';
@@ -14,13 +13,16 @@ export class CategoryService {
     });
   }
 
-  findAll() {
-    return `This action returns all category`;
+  async getCategories(categoryWhere: Prisma.CategoryWhereInput, categorySelect: Prisma.CategorySelect): Promise<Category[] | []> {
+    return await this.prisma.category.findMany({
+      where: categoryWhere,
+      select: categorySelect,
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
-  }
+  // async getCategoryById(id: number): Promise<Category> {
+  //   return `This action returns a #${id} category`;
+  // }
 
   // update(id: number, updateCategoryDto: UpdateCategoryDto) {
   //   return `This action updates a #${id} category`;

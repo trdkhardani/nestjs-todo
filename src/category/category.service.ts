@@ -20,13 +20,12 @@ export class CategoryService {
     });
   }
 
-  // async getCategoryById(id: number): Promise<Category> {
-  //   return `This action returns a #${id} category`;
-  // }
-
-  // update(id: number, updateCategoryDto: UpdateCategoryDto) {
-  //   return `This action updates a #${id} category`;
-  // }
+  async updateCategory(categoryWhere: Prisma.CategoryWhereUniqueInput, data: Prisma.CategoryUpdateInput): Promise<Category> {
+    return await this.prisma.category.update({
+      where: categoryWhere,
+      data,
+    });
+  }
 
   remove(id: number) {
     return `This action removes a #${id} category`;

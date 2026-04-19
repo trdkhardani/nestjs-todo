@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, Req } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { type CreateCategoryDto, CreateCategorySchema } from './dto/create-category.dto';
-// import { UpdateCategoryDto } from './dto/update-category.dto';
+import { type UpdateCategoryDto, UpdateCategorySchema } from './dto/update-category.dto';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe';
 import type { UserPayload } from 'src/interface/auth';
@@ -61,16 +61,27 @@ export class CategoryController {
     };
   }
 
-  // @Get(':categoryId')
-  // async getCategoryById(@Param('categoryId') categoryId: string): Promise<ResponseInterface> {
-  //   const category = await this.categoryService.getCategoryById();
-  //   return
-  // }
+  @Patch(':categoryId')
+  async updateCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string, @Body(new ZodValidationPipe(UpdateCategorySchema)) updateCategoryDto: UpdateCategoryDto): Promise<ResponseInterface> {
+    const updateCategory = await this.categoryService.updateCategory(
+      {
+        category_id: categoryId,
+        user_id: req.user.userId,
+      },
+      {
+        category_name: updateCategoryDto.categoryName,
+      },
+    );
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-  //   return this.categoryService.update(+id, updateCategoryDto);
-  // }
+    return {
+      success: true,
+      data: {
+        categoryId: updateCategory.category_id,
+        categoryName: updateCategory.category_name,
+      },
+      message: 'Category updated successfully.',
+    };
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {

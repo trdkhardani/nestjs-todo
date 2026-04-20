@@ -1,18 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaService } from './prisma.service';
-import { AuthModule } from './auth/auth.module';
-import configuration from './config/configuration';
+import configuration from './core/config/configuration';
 import { APP_FILTER, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { CatchEverythingFilter } from './filter/catch-everything.filter';
-import { ResponseInterceptor } from './interceptors/response.interceptor';
-import { UserService } from './user/user.service';
-import { UserModule } from './user/user.module';
-import { TaskModule } from './task/task.module';
-import { CategoryModule } from './category/category.module';
-import { AdminModule } from './admin/admin.module';
+import { CatchEverythingFilter } from './common/filters/catch-everything.filter';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { DatabaseModule } from './core/database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/users/users.module';
+import { TaskModule } from './modules/tasks/tasks.module';
+import { CategoryModule } from './modules/categories/categories.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +17,7 @@ import { AdminModule } from './admin/admin.module';
       isGlobal: true,
       load: [configuration],
     }),
+    DatabaseModule,
     RouterModule.register([
       {
         path: 'api/v1',
@@ -53,10 +51,7 @@ import { AdminModule } from './admin/admin.module';
     CategoryModule,
     AdminModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
-    PrismaService,
     {
       provide: APP_FILTER,
       useClass: CatchEverythingFilter,
@@ -65,7 +60,6 @@ import { AdminModule } from './admin/admin.module';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
-    UserService,
   ],
 })
 export class AppModule {}

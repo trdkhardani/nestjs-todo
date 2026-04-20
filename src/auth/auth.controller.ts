@@ -54,6 +54,7 @@ export class AuthController {
         user_id: true,
         user_name: true,
         user_password: true,
+        user_role: true,
       },
     );
 
@@ -74,6 +75,7 @@ export class AuthController {
     const payload = {
       userId: login?.user_id,
       userName: login?.user_name,
+      userRole: login.user_role,
     };
 
     return {

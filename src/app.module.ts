@@ -12,6 +12,7 @@ import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
 import { TaskModule } from './task/task.module';
 import { CategoryModule } from './category/category.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -39,6 +40,10 @@ import { CategoryModule } from './category/category.module';
             path: 'categories',
             module: CategoryModule,
           },
+          {
+            path: 'admin',
+            module: AdminModule,
+          },
         ],
       },
     ]),
@@ -46,6 +51,7 @@ import { CategoryModule } from './category/category.module';
     UserModule,
     TaskModule,
     CategoryModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

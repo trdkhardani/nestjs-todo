@@ -6,7 +6,6 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe';
 import type { UserPayload } from 'src/interface/auth';
 import type { ResponseInterface } from 'src/interface/response';
-import { success } from 'zod';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -83,8 +82,20 @@ export class CategoryController {
     };
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoryService.remove(+id);
+  @Delete(':categoryId')
+  async deleteCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string): Promise<ResponseInterface> {
+    const deleteCategory = await this.categoryService.deleteCategory({
+      category_id: categoryId,
+      user_id: req.user.userId,
+    });
+
+    return {
+      success: true,
+      data: {
+        categoryId: deleteCategory.category_id,
+        categoryName: deleteCategory.category_name,
+      },
+      message: 'Category deleted successfully.',
+    };
   }
 }

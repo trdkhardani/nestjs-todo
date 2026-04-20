@@ -36,7 +36,7 @@ model Task {
   user_id           String
   category_id       String?
   user              User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  category          Category?  @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  category          Category?  @relation(fields: [category_id], references: [category_id], onDelete: SetNull)
 }
 
 model Category {

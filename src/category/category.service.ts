@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-// import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/prisma.service';
 import { Category, Prisma } from 'generated/prisma/client';
 
@@ -27,7 +26,9 @@ export class CategoryService {
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} category`;
+  async deleteCategory(categoryWhere: Prisma.CategoryWhereUniqueInput): Promise<Category> {
+    return await this.prisma.category.delete({
+      where: categoryWhere,
+    });
   }
 }

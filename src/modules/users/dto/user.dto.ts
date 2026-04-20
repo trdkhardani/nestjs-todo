@@ -2,16 +2,16 @@ import z from 'zod';
 
 export const UpdateUserSchema = z
   .object({
-    userUsername: z.string().trim().max(15),
-    userName: z.string().trim().max(300),
+    username: z.string().trim().max(15),
+    name: z.string().trim().max(300),
   })
   .required()
   .superRefine((data, ctx) => {
-    if (data.userUsername.includes(' ')) {
+    if (data.username.includes(' ')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Username can not contain space',
-        path: ['userUsername'],
+        path: ['username'],
       });
     }
   });

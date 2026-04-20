@@ -6,6 +6,26 @@ import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import { type CreateTaskDto, CreateTaskSchema, type GetTasksDto, GetTasksSchema, type UpdateTaskDto, UpdateTaskSchema } from './dto/task.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 
+interface TaskMutationData {
+  id: string;
+  title: string;
+  categoryId: string | null;
+  description: string | null;
+}
+
+interface TaskListItemData {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  category: string | null;
+}
+
+interface TaskStatusData {
+  id: string;
+  status: string;
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class TaskController {
@@ -13,34 +33,21 @@ export class TaskController {
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateTaskSchema))
-  async createTask(@Req() req: UserPayload, @Body() createTaskDto: CreateTaskDto): Promise<ResponseInterface> {
-
+  async createTask(@Req() req: UserPayload, @Body() createTaskDto: CreateTaskDto): Promise<ResponseInterface<TaskMutationData>> {
     const createTask = await this.taskService.createTask({
-      task_title: createTaskDto.taskTitle,
-      task_description: createTaskDto.taskDescription || null,
-      user: {
-        connect: {
-          user_id: req.user.userId,
-        },
-      },
-      ...(createTaskDto.taskCategoryId
-        ? {
-            category: {
-              connect: {
-                category_id: createTaskDto.taskCategoryId,
-              },
-            },
-          }
-        : {}),
+      userId: req.user.sub,
+      title: createTaskDto.title,
+      description: createTaskDto.description,
+      categoryId: createTaskDto.categoryId,
     });
 
     return {
       success: true,
       data: {
-        taskId: createTask.task_id,
-        taskTitle: createTask.task_title,
-        taskCategoryId: createTask.category_id || null,
-        taskDescription: createTask.task_description,
+        id: createTask.task_id,
+        title: createTask.task_title,
+        categoryId: createTask.category_id || null,
+        description: createTask.task_description,
       },
       message: 'Task created successfully.',
     };
@@ -48,127 +55,100 @@ export class TaskController {
 
   @Get()
   @UsePipes(new ZodValidationPipe(GetTasksSchema))
-  async getTasks(@Req() req: UserPayload, @Query() getTasksDto: GetTasksDto): Promise<ResponseInterface> {
-    const tasks = await this.taskService.getTasks(
-      {
-        user_id: req.user.userId,
-        ...(getTasksDto.taskStatus
-          ? {
-              task_status: getTasksDto.taskStatus,
-            }
-          : {}),
-      },
-      {
-        task_id: true,
-        task_title: true,
-        task_description: true,
-        task_status: true,
-        category: {
-          select: {
-            category_name: true,
-          },
-        },
-      },
-      Number(getTasksDto.page),
-      Number(getTasksDto.limit),
-    );
+  async getTasks(@Req() req: UserPayload, @Query() getTasksDto: GetTasksDto): Promise<ResponseInterface<TaskListItemData[]>> {
+    const tasks = await this.taskService.getTasks({
+      userId: req.user.sub,
+      page: Number(getTasksDto.page),
+      limit: Number(getTasksDto.limit),
+      status: getTasksDto.status,
+    });
 
     return {
       success: true,
-      data: tasks,
+      data: tasks.map((task) => ({
+        id: task.task_id,
+        title: task.task_title,
+        description: task.task_description,
+        status: task.task_status,
+        category: task.category?.category_name ?? null,
+      })),
       message: 'Tasks retrieved successfully.',
     };
   }
 
   @Get(':taskId')
-  async getTaskById(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface> {
-    const task = await this.taskService.getTaskById(
-      {
-        user_id: req.user.userId,
-        task_id: taskId,
-      },
-      {
-        task_id: true,
-        task_title: true,
-        task_description: true,
-        task_status: true,
-        category: {
-          select: {
-            category_name: true,
-          },
-        },
-      },
-    );
+  async getTaskById(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface<TaskListItemData>> {
+    const task = await this.taskService.getTaskById({
+      userId: req.user.sub,
+      taskId,
+    });
 
     return {
       success: true,
-      data: task,
+      data: {
+        id: task.task_id,
+        title: task.task_title,
+        description: task.task_description,
+        status: task.task_status,
+        category: task.category?.category_name ?? null,
+      },
       message: 'Task retrieved successfully.',
     };
   }
 
   @Patch(':taskId')
-  async updateTask(@Req() req: UserPayload, @Param('taskId') taskId: string, @Body(new ZodValidationPipe(UpdateTaskSchema)) updateTaskDto: UpdateTaskDto): Promise<ResponseInterface> {
-    const updateTask = await this.taskService.updateTask(
-      {
-        user_id: req.user.userId,
-        task_id: taskId,
-      },
-      {
-        task_title: updateTaskDto.taskTitle,
-        task_description: updateTaskDto.taskDescription,
-        ...(updateTaskDto.taskCategoryId
-          ? {
-              category: {
-                connect: {
-                  category_id: updateTaskDto.taskCategoryId,
-                },
-              },
-            }
-          : {}),
-      },
-    );
+  async updateTask(@Req() req: UserPayload, @Param('taskId') taskId: string, @Body(new ZodValidationPipe(UpdateTaskSchema)) updateTaskDto: UpdateTaskDto): Promise<ResponseInterface<TaskMutationData>> {
+    const updateTask = await this.taskService.updateTask({
+      userId: req.user.sub,
+      taskId,
+      title: updateTaskDto.title,
+      description: updateTaskDto.description,
+      categoryId: updateTaskDto.categoryId,
+    });
 
     return {
       success: true,
       data: {
-        taskId: updateTask.task_id,
-        taskTitle: updateTask.task_title,
-        taskCategoryId: updateTask.category_id || null,
-        taskDescription: updateTask.task_description,
+        id: updateTask.task_id,
+        title: updateTask.task_title,
+        categoryId: updateTask.category_id || null,
+        description: updateTask.task_description,
       },
       message: 'Task updated successfully.',
     };
   }
 
   @Patch('check/:taskId')
-  async checkUncheckTask(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface> {
-    const checkTask = await this.taskService.checkUncheckTask(req.user.userId, taskId);
+  async checkUncheckTask(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface<TaskStatusData>> {
+    const checkTask = await this.taskService.checkUncheckTask({
+      userId: req.user.sub,
+      taskId,
+    });
 
     return {
       success: true,
       data: {
-        taskId: checkTask.task_id,
-        taskStatus: checkTask.task_status,
+        id: checkTask.task_id,
+        status: checkTask.task_status,
       },
       message: `Task ${checkTask.task_status === 'FINISHED' ? 'checked' : 'unchecked'}.`,
     };
   }
 
   @Delete(':taskId')
-  async deleteTask(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface> {
+  async deleteTask(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface<TaskMutationData>> {
     const taskDeletion = await this.taskService.deleteTask({
-      task_id: taskId,
-      user_id: req.user.userId,
+      taskId,
+      userId: req.user.sub,
     });
 
     return {
       success: true,
       data: {
-        data: {
-          taskId: taskDeletion.task_id,
-          taskTitle: taskDeletion.task_title,
-        },
+        id: taskDeletion.task_id,
+        title: taskDeletion.task_title,
+        categoryId: taskDeletion.category_id || null,
+        description: taskDeletion.task_description,
       },
       message: 'Task deleted successfully.',
     };

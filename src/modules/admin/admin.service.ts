@@ -1,17 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CategoryService } from 'src/modules/categories/categories.service';
-import { Category } from 'generated/prisma/browser';
 import { Prisma } from 'generated/prisma/client';
+import { CreateCategoryInput } from './interfaces/admin.interface';
+
+type CategorySummary = Prisma.CategoryGetPayload<{
+  select: {
+    category_id: true;
+    category_name: true;
+  };
+}>;
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService, private categoryService: CategoryService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async createCategory(data: Prisma.CategoryCreateInput): Promise<Category> {
-    return await this.categoryService.createCategory(data);
+  async createCategory(createCategoryInput: CreateCategoryInput): Promise<CategorySummary> {
+    return await this.prisma.category.create({
+      data: {
+        category_name: createCategoryInput.name,
+      },
+      select: {
+        category_id: true,
+        category_name: true,
+      },
+    });
   }
 
   findAll() {

@@ -7,6 +7,11 @@ import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import type { ResponseInterface } from 'src/common/interfaces/response.interface';
 
+interface CategoryData {
+  id: string;
+  name: string;
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class CategoryController {
@@ -14,86 +19,68 @@ export class CategoryController {
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateCategorySchema))
-  async createCategory(@Req() req: UserPayload, @Body() createCategoryDto: CreateCategoryDto): Promise<ResponseInterface> {
+  async createCategory(@Req() req: UserPayload, @Body() createCategoryDto: CreateCategoryDto): Promise<ResponseInterface<CategoryData>> {
     const createCategory = await this.categoryService.createCategory({
-      category_name: createCategoryDto.categoryName,
-      user: {
-        connect: {
-          user_id: req.user.userId,
-        },
-      },
+      userId: req.user.sub,
+      name: createCategoryDto.name,
     });
 
     return {
       success: true,
       data: {
-        categoryId: createCategory.category_id,
-        categoryName: createCategory.category_name,
+        id: createCategory.category_id,
+        name: createCategory.category_name,
       },
       message: 'Category created successfully.',
     };
   }
 
   @Get()
-  async getCategories(@Req() req: UserPayload): Promise<ResponseInterface> {
-    const categories = await this.categoryService.getCategories(
-      {
-        OR: [
-          {
-            user_id: req.user.userId,
-          },
-          {
-            user_id: null,
-          },
-        ],
-      },
-      {
-        category_id: true,
-        category_name: true,
-      },
-    );
+  async getCategories(@Req() req: UserPayload): Promise<ResponseInterface<CategoryData[]>> {
+    const categories = await this.categoryService.getCategories({
+      userId: req.user.sub,
+    });
 
     return {
       success: true,
-      data: categories,
+      data: categories.map((category) => ({
+        id: category.category_id,
+        name: category.category_name,
+      })),
       message: 'Categories retrieved successfully',
     };
   }
 
   @Patch(':categoryId')
-  async updateCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string, @Body(new ZodValidationPipe(UpdateCategorySchema)) updateCategoryDto: UpdateCategoryDto): Promise<ResponseInterface> {
-    const updateCategory = await this.categoryService.updateCategory(
-      {
-        category_id: categoryId,
-        user_id: req.user.userId,
-      },
-      {
-        category_name: updateCategoryDto.categoryName,
-      },
-    );
+  async updateCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string, @Body(new ZodValidationPipe(UpdateCategorySchema)) updateCategoryDto: UpdateCategoryDto): Promise<ResponseInterface<CategoryData>> {
+    const updateCategory = await this.categoryService.updateCategory({
+      categoryId,
+      userId: req.user.sub,
+      name: updateCategoryDto.name,
+    });
 
     return {
       success: true,
       data: {
-        categoryId: updateCategory.category_id,
-        categoryName: updateCategory.category_name,
+        id: updateCategory.category_id,
+        name: updateCategory.category_name,
       },
       message: 'Category updated successfully.',
     };
   }
 
   @Delete(':categoryId')
-  async deleteCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string): Promise<ResponseInterface> {
+  async deleteCategory(@Req() req: UserPayload, @Param('categoryId') categoryId: string): Promise<ResponseInterface<CategoryData>> {
     const deleteCategory = await this.categoryService.deleteCategory({
-      category_id: categoryId,
-      user_id: req.user.userId,
+      categoryId,
+      userId: req.user.sub,
     });
 
     return {
       success: true,
       data: {
-        categoryId: deleteCategory.category_id,
-        categoryName: deleteCategory.category_name,
+        id: deleteCategory.category_id,
+        name: deleteCategory.category_name,
       },
       message: 'Category deleted successfully.',
     };

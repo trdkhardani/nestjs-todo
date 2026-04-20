@@ -2,7 +2,7 @@ import z from 'zod';
 
 export const UpdateCategorySchema = z
   .object({
-    categoryName: z.string().max(20),
+    name: z.string().max(20),
   })
   .required();
 

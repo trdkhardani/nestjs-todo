@@ -4,16 +4,13 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { ResponseInterface } from '../interfaces/response.interface';
 
-interface ErrorResponse {
+interface ErrorResponse extends ResponseInterface<any> {
   statusCode: HttpStatus;
-  success: false;
-  data: null;
-  message: unknown;
 }
 
 @Catch()
@@ -39,7 +36,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
         throw new NotFoundException('No record found for update.');
       else if (exception.message.includes('No record was found for a delete'))
         throw new NotFoundException('No record found for deletion.');
-      else throw new NotFoundException('No record found.');
+      // else throw new NotFoundException('No record found.');
       // if ((requestMethod === 'PATCH' || requestMethod === 'PUT') || exception.message.includes('No record was found for an update'))
       //   throw new NotFoundException(exception.message);
       // else if (requestMethod)
@@ -53,7 +50,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
       message:
         httpStatus >= 500
           ? 'Internal Server Error'
-          : exception.getResponse()['message'] || exception.getResponse(),
+          : (exception.getResponse()['message'] as string),
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, responseBody.statusCode);

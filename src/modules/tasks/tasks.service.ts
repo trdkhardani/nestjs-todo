@@ -1,30 +1,121 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Task } from 'generated/prisma/client';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
+import {
+  CheckTaskInput,
+  CreateTaskInput,
+  DeleteTaskInput,
+  GetTaskByIdInput,
+  GetTasksInput,
+  UpdateTaskInput,
+} from './interfaces/task.interface';
+
+type TaskMutation = Prisma.TaskGetPayload<{
+  select: {
+    task_id: true;
+    task_title: true;
+    task_description: true;
+    category_id: true;
+  };
+}>;
+
+type TaskListItem = Prisma.TaskGetPayload<{
+  select: {
+    task_id: true;
+    task_title: true;
+    task_description: true;
+    task_status: true;
+    category: {
+      select: {
+        category_name: true;
+      };
+    };
+  };
+}>;
+
+type TaskStatus = Prisma.TaskGetPayload<{
+  select: {
+    task_id: true;
+    task_status: true;
+  };
+}>;
 
 @Injectable()
 export class TaskService {
   constructor(private prisma: PrismaService) {}
 
-  async createTask(data: Prisma.TaskCreateInput): Promise<Task> {
+  async createTask(createTaskInput: CreateTaskInput): Promise<TaskMutation> {
     return await this.prisma.task.create({
-      data,
+      data: {
+        task_title: createTaskInput.title,
+        task_description: createTaskInput.description ?? null,
+        user: {
+          connect: {
+            user_id: createTaskInput.userId,
+          },
+        },
+        ...(createTaskInput.categoryId
+          ? {
+              category: {
+                connect: {
+                  category_id: createTaskInput.categoryId,
+                },
+              },
+            }
+          : {}),
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_description: true,
+        category_id: true,
+      },
     });
   }
 
-  async getTasks(taskWhere: Prisma.TaskWhereInput, taskSelect: Prisma.TaskSelect, page: number, limit: number): Promise<Task[] | []> {
+  async getTasks(getTasksInput: GetTasksInput): Promise<TaskListItem[]> {
     return await this.prisma.task.findMany({
-      where: taskWhere,
-      select: taskSelect,
-      skip: (page - 1) * limit,
-      take: limit,
+      where: {
+        user_id: getTasksInput.userId,
+        ...(getTasksInput.status
+          ? {
+              task_status: getTasksInput.status,
+            }
+          : {}),
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_description: true,
+        task_status: true,
+        category: {
+          select: {
+            category_name: true,
+          },
+        },
+      },
+      skip: ((getTasksInput.page ?? 1) - 1) * (getTasksInput.limit ?? 10),
+      take: getTasksInput.limit ?? 10,
     });
   }
 
-  async getTaskById(taskWhere: Prisma.TaskWhereUniqueInput, taskSelect: Prisma.TaskSelect): Promise<Task | null> {
+  async getTaskById(getTaskByIdInput: GetTaskByIdInput): Promise<TaskListItem> {
     const task = await this.prisma.task.findUnique({
-      where: taskWhere,
-      select: taskSelect,
+      where: {
+        task_id: getTaskByIdInput.taskId,
+        user_id: getTaskByIdInput.userId,
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_description: true,
+        task_status: true,
+        category: {
+          select: {
+            category_name: true,
+          },
+        },
+      },
     });
 
     if (!task) {
@@ -36,39 +127,85 @@ export class TaskService {
     return task;
   }
 
-  async updateTask(taskWhere: Prisma.TaskWhereUniqueInput, data: Prisma.TaskUpdateInput): Promise<Task> {
+  async updateTask(updateTaskInput: UpdateTaskInput): Promise<TaskMutation> {
     return await this.prisma.task.update({
-      where: taskWhere,
-      data,
+      where: {
+        task_id: updateTaskInput.taskId,
+        user_id: updateTaskInput.userId,
+      },
+      data: {
+        task_title: updateTaskInput.title,
+        task_description: updateTaskInput.description,
+        ...(updateTaskInput.categoryId === null
+          ? {
+              category: {
+                disconnect: true,
+              },
+            }
+          : updateTaskInput.categoryId
+            ? {
+                category: {
+                  connect: {
+                    category_id: updateTaskInput.categoryId,
+                  },
+                },
+              }
+            : {}),
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_description: true,
+        category_id: true,
+      },
     });
   }
 
-  async checkUncheckTask(userId: string, taskId: string): Promise<Task> {
-    const task = await this.getTaskById(
-      {
-        task_id: taskId,
-        user_id: userId,
+  async checkUncheckTask(checkTaskInput: CheckTaskInput): Promise<TaskStatus> {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        task_id: checkTaskInput.taskId,
+        user_id: checkTaskInput.userId,
       },
-      {
+      select: {
         task_status: true,
       },
-    );
+    });
 
-    return await this.updateTask(
-      {
-        task_id: taskId,
-        user_id: userId,
+    if (!task) {
+      throw new NotFoundException('Task not found.', {
+        description: `No task Found.`,
+      });
+    }
+
+    return await this.prisma.task.update({
+      where: {
+        task_id: checkTaskInput.taskId,
+        user_id: checkTaskInput.userId,
       },
-      {
+      data: {
         task_status:
           task?.task_status === 'UNFINISHED' ? 'FINISHED' : 'UNFINISHED',
       },
-    );
+      select: {
+        task_id: true,
+        task_status: true,
+      },
+    });
   }
 
-  async deleteTask(taskWhere: Prisma.TaskWhereUniqueInput): Promise<Task> {
+  async deleteTask(deleteTaskInput: DeleteTaskInput): Promise<TaskMutation> {
     return await this.prisma.task.delete({
-      where: taskWhere,
+      where: {
+        task_id: deleteTaskInput.taskId,
+        user_id: deleteTaskInput.userId,
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_description: true,
+        category_id: true,
+      },
     });
   }
 }

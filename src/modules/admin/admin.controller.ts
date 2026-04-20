@@ -8,6 +8,11 @@ import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
+interface CategoryData {
+  id: string;
+  name: string;
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
@@ -15,15 +20,15 @@ export class AdminController {
 
   @Post('categories')
   @UsePipes(new ZodValidationPipe(CreateCategorySchema))
-  async createCategory(@Body() createCategoryDto: CreateCategoryDto): Promise<ResponseInterface> {
+  async createCategory(@Body() createCategoryDto: CreateCategoryDto): Promise<ResponseInterface<CategoryData>> {
     const createCategory = await this.adminService.createCategory({
-      category_name: createCategoryDto.categoryName,
+      name: createCategoryDto.name,
     });
     return {
       success: true,
       data: {
-        categoryId: createCategory.category_id,
-        categoryName: createCategory.category_name,
+        id: createCategory.category_id,
+        name: createCategory.category_name,
       },
       message: 'Category created successfully.',
     };

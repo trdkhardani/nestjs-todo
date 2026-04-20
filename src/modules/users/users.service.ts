@@ -1,58 +1,121 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { Prisma, User } from 'generated/prisma/client';
-import { ChangePasswordInterface } from './interfaces/user.interface';
+import { Prisma } from 'generated/prisma/client';
+import {
+  ChangePasswordInput,
+  DeleteUserInput,
+  UpdateUserInput,
+  UserInfoInput,
+} from './interfaces/user.interface';
 import { PrismaService } from 'src/core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
+
+type UserInfo = Prisma.UserGetPayload<{
+  select: {
+    user_id: true;
+    user_email: true;
+    user_name: true;
+    user_username: true;
+    user_role: true;
+  };
+}>;
+
+type UserSummary = Prisma.UserGetPayload<{
+  select: {
+    user_id: true;
+    user_name: true;
+    user_username: true;
+  };
+}>;
+
+type UserPassword = Prisma.UserGetPayload<{
+  select: {
+    user_password: true;
+  };
+}>;
+
+type DeletedUser = Prisma.UserGetPayload<{
+  select: {
+    user_id: true;
+  };
+}>;
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async info(userWhere: Prisma.UserWhereUniqueInput, userSelect: Prisma.UserSelect): Promise<User | null> {
+  async info(userInfoInput: UserInfoInput): Promise<UserInfo | null> {
     return await this.prisma.user.findUnique({
-      where: userWhere,
-      select: userSelect,
-    });
-  }
-
-  async updateUser(userWhere: Prisma.UserWhereUniqueInput, data: Prisma.UserUpdateInput): Promise<User> {
-    return await this.prisma.user.update({
-      where: userWhere,
-      data,
-    });
-  }
-
-  async changeUserPassword(changePassInterface: ChangePasswordInterface): Promise<User> {
-    const userInfo = await this.info(
-      {
-        user_id: changePassInterface.userId,
+      where: {
+        user_id: userInfoInput.userId,
       },
-      {
+      select: {
+        user_id: true,
+        user_email: true,
+        user_name: true,
+        user_username: true,
+        user_role: true,
+      },
+    });
+  }
+
+  async updateUser(updateUserInput: UpdateUserInput): Promise<UserSummary> {
+    return await this.prisma.user.update({
+      where: {
+        user_id: updateUserInput.userId,
+      },
+      data: {
+        user_username: updateUserInput.username,
+        user_name: updateUserInput.name,
+      },
+      select: {
+        user_id: true,
+        user_name: true,
+        user_username: true,
+      },
+    });
+  }
+
+  async changeUserPassword(changePasswordInput: ChangePasswordInput): Promise<UserSummary> {
+    const userInfo: UserPassword | null = await this.prisma.user.findUnique({
+      where: {
+        user_id: changePasswordInput.userId,
+      },
+      select: {
         user_password: true,
       },
-    );
+    });
 
-    const verifyOldPassword = await bcrypt.compare(changePassInterface.oldPassword, userInfo?.user_password as string);
+    const verifyOldPassword = await bcrypt.compare(changePasswordInput.oldPassword, userInfo?.user_password as string);
     if (!verifyOldPassword) {
       throw new UnauthorizedException('Invalid old password.', {
         description: "Old Password from Input Don't Match with Actual Old Password",
       });
     }
 
-    const hashedNewPassword = await bcrypt.hash(changePassInterface.newPassword, 10);
-    return await this.updateUser(
-      {
-        user_id: changePassInterface.userId,
+    const hashedNewPassword = await bcrypt.hash(changePasswordInput.newPassword, 10);
+    return await this.prisma.user.update({
+      where: {
+        user_id: changePasswordInput.userId,
       },
-      {
+      data: {
         user_password: hashedNewPassword,
       },
-    );
+      select: {
+        user_id: true,
+        user_name: true,
+        user_username: true,
+      },
+    });
   }
 
-  async deleteUser(userWhere: Prisma.UserWhereUniqueInput): Promise<User> {
+  async deleteUser(deleteUserInput: DeleteUserInput): Promise<DeletedUser> {
     return await this.prisma.user.delete({
-      where: userWhere,
+      where: {
+        user_id: deleteUserInput.userId,
+      },
+      select: {
+        user_id: true,
+      },
     });
   }
 }

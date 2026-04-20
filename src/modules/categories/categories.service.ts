@@ -1,34 +1,86 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { Category, Prisma } from 'generated/prisma/client';
+import { Prisma } from 'generated/prisma/client';
+import {
+  CreateCategoryInput,
+  DeleteCategoryInput,
+  GetCategoriesInput,
+  UpdateCategoryInput,
+} from './interfaces/category.interface';
+
+type CategorySummary = Prisma.CategoryGetPayload<{
+  select: {
+    category_id: true;
+    category_name: true;
+  };
+}>;
 
 @Injectable()
 export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
-  async createCategory(data: Prisma.CategoryCreateInput): Promise<Category> {
+  async createCategory(createCategoryInput: CreateCategoryInput): Promise<CategorySummary> {
     return this.prisma.category.create({
-      data,
+      data: {
+        category_name: createCategoryInput.name,
+        user: {
+          connect: {
+            user_id: createCategoryInput.userId,
+          },
+        },
+      },
+      select: {
+        category_id: true,
+        category_name: true,
+      },
     });
   }
 
-  async getCategories(categoryWhere: Prisma.CategoryWhereInput, categorySelect: Prisma.CategorySelect): Promise<Category[] | []> {
+  async getCategories(getCategoriesInput: GetCategoriesInput): Promise<CategorySummary[]> {
     return await this.prisma.category.findMany({
-      where: categoryWhere,
-      select: categorySelect,
+      where: {
+        OR: [
+          {
+            user_id: getCategoriesInput.userId,
+          },
+          {
+            user_id: null,
+          },
+        ],
+      },
+      select: {
+        category_id: true,
+        category_name: true,
+      },
     });
   }
 
-  async updateCategory(categoryWhere: Prisma.CategoryWhereUniqueInput, data: Prisma.CategoryUpdateInput): Promise<Category> {
+  async updateCategory(updateCategoryInput: UpdateCategoryInput): Promise<CategorySummary> {
     return await this.prisma.category.update({
-      where: categoryWhere,
-      data,
+      where: {
+        category_id: updateCategoryInput.categoryId,
+        user_id: updateCategoryInput.userId,
+      },
+      data: {
+        category_name: updateCategoryInput.name,
+      },
+      select: {
+        category_id: true,
+        category_name: true,
+      },
     });
   }
 
-  async deleteCategory(categoryWhere: Prisma.CategoryWhereUniqueInput): Promise<Category> {
+  async deleteCategory(deleteCategoryInput: DeleteCategoryInput): Promise<CategorySummary> {
     return await this.prisma.category.delete({
-      where: categoryWhere,
+      where: {
+        category_id: deleteCategoryInput.categoryId,
+        user_id: deleteCategoryInput.userId,
+      },
+      select: {
+        category_id: true,
+        category_name: true,
+      },
     });
   }
 }

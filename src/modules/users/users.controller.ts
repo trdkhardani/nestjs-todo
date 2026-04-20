@@ -6,51 +6,63 @@ import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { type UpdateUserDto, UpdateUserSchema, type ChangePasswordDto, ChangePasswordSchema } from './dto/user.dto';
 
+interface UserInfoData {
+  id: string;
+  email: string;
+  name: string;
+  username: string;
+  role: string;
+}
+
+interface UserSummaryData {
+  id: string;
+  name: string;
+  username: string;
+}
+
+interface DeleteUserData {
+  id: string;
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Get()
-  async info(@Req() req: UserPayload): Promise<ResponseInterface> {
-    const userInfo = await this.userService.info(
-      {
-        user_id: req.user.userId,
-      },
-      {
-        user_id: true,
-        user_email: true,
-        user_name: true,
-        user_username: true,
-        user_role: true,
-      },
-    );
+  async info(@Req() req: UserPayload): Promise<ResponseInterface<UserInfoData>> {
+    const userInfo = await this.userService.info({
+      userId: req.user.sub,
+    });
 
     return {
       success: true,
-      data: userInfo,
+      data: {
+        id: userInfo!.user_id,
+        email: userInfo!.user_email,
+        name: userInfo!.user_name,
+        username: userInfo!.user_username,
+        role: userInfo!.user_role,
+      },
       message: 'User info retrieved successfully.',
     };
   }
 
   @Patch()
   @UsePipes(new ZodValidationPipe(UpdateUserSchema))
-  async updateUser(@Req() req: UserPayload, @Body() updateUserDto: UpdateUserDto): Promise<ResponseInterface> {
-    const userUpdate = await this.userService.updateUser(
-      {
-        user_id: req.user.userId,
-      },
-      {
-        user_username: updateUserDto.userUsername,
-        user_name: updateUserDto.userName,
-      },
-    );
+  async updateUser(@Req() req: UserPayload, @Body() updateUserDto: UpdateUserDto): Promise<ResponseInterface<UserSummaryData>> {
+    const userUpdate = await this.userService.updateUser({
+      userId: req.user.sub,
+      username: updateUserDto.username,
+      name: updateUserDto.name,
+    });
 
     return {
       success: true,
       data: {
-        userUsername: userUpdate.user_username,
-        userName: userUpdate.user_name,
+        id: userUpdate.user_id,
+        username: userUpdate.user_username,
+        name: userUpdate.user_name,
       },
       message: 'User data updated successfully.',
     };
@@ -58,9 +70,9 @@ export class UserController {
 
   @Patch('/change-password')
   @UsePipes(new ZodValidationPipe(ChangePasswordSchema))
-  async changeUserPassword(@Req() req: UserPayload, @Body() changePasswordDto: ChangePasswordDto): Promise<ResponseInterface> {
+  async changeUserPassword(@Req() req: UserPayload, @Body() changePasswordDto: ChangePasswordDto): Promise<ResponseInterface<UserSummaryData>> {
     const updatePassword = await this.userService.changeUserPassword({
-      userId: req.user.userId,
+      userId: req.user.sub,
       oldPassword: changePasswordDto.oldPassword,
       newPassword: changePasswordDto.newPassword,
     });
@@ -68,23 +80,24 @@ export class UserController {
     return {
       success: true,
       data: {
-        userUsername: updatePassword.user_username,
-        userName: updatePassword.user_name,
+        id: updatePassword.user_id,
+        username: updatePassword.user_username,
+        name: updatePassword.user_name,
       },
       message: 'Password changed successfully.',
     };
   }
 
   @Delete()
-  async deleteUser(@Req() req: UserPayload): Promise<ResponseInterface> {
+  async deleteUser(@Req() req: UserPayload): Promise<ResponseInterface<DeleteUserData>> {
     const deleteUser = await this.userService.deleteUser({
-      user_id: req.user.userId,
+      userId: req.user.sub,
     });
 
     return {
       success: true,
       data: {
-        userId: deleteUser.user_id,
+        id: deleteUser.user_id,
       },
       message: 'User deleted successfully.',
     };

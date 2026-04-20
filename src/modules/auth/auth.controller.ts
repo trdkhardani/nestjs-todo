@@ -5,6 +5,17 @@ import * as bcrypt from 'bcrypt';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { JwtService } from '@nestjs/jwt';
 import { ResponseInterface } from 'src/common/interfaces/response.interface';
+import { JwtPayload } from './interfaces/auth.interface';
+
+interface RegisterData {
+  name: string;
+  username: string;
+}
+
+interface LoginData {
+  username: string;
+  accessToken: string;
+}
 
 @Controller()
 export class AuthController {
@@ -15,21 +26,21 @@ export class AuthController {
 
   @Post('register')
   @UsePipes(new ZodValidationPipe(RegisterSchema))
-  async register(@Body() registerDto: RegisterDto): Promise<ResponseInterface> {
-    const hashedPassword = await bcrypt.hash(registerDto.userPassword, 10);
+  async register(@Body() registerDto: RegisterDto): Promise<ResponseInterface<RegisterData>> {
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    const registerUser = await this.authService.register({
-      user_username: registerDto.userUsername,
-      user_email: registerDto.userEmail,
-      user_name: registerDto.userName,
-      user_password: hashedPassword,
+    const register = await this.authService.register({
+      username: registerDto.username,
+      email: registerDto.email,
+      name: registerDto.name,
+      password: hashedPassword,
     });
 
     return {
       success: true,
       data: {
-        userName: registerUser.user_name,
-        userUsername: registerUser.user_username,
+        name: register.user_name,
+        username: register.user_username,
       },
       message: 'Registration successful.',
     };
@@ -38,37 +49,23 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginSchema))
-  async login(@Body() loginDto: LoginDto): Promise<ResponseInterface> {
-    const login = await this.authService.login(
-      {
-        OR: [
-          {
-            user_username: loginDto.userUsername,
-          },
-          {
-            user_email: loginDto.userEmail,
-          },
-        ],
-      },
-      loginDto.userPassword,
-      {
-        user_id: true,
-        user_name: true,
-        user_password: true,
-        user_role: true,
-      },
-    );
+  async login(@Body() loginDto: LoginDto): Promise<ResponseInterface<LoginData>> {
+    const login = await this.authService.login({
+      username: loginDto.username,
+      email: loginDto.email,
+      password: loginDto.password,
+    });
 
-    const payload = {
-      userId: login?.user_id,
-      userName: login?.user_name,
-      userRole: login?.user_role,
+    const payload: JwtPayload = {
+      sub: login?.user_id,
+      username: login?.user_username,
+      role: login?.user_role,
     };
 
     return {
       success: true,
       data: {
-        userName: login?.user_name,
+        username: login?.user_username,
         accessToken: this.jwtService.sign(payload),
       },
       message: 'Login successful.',

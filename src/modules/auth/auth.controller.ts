@@ -6,6 +6,7 @@ import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { JwtService } from '@nestjs/jwt';
 import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import { JwtPayload } from './interfaces/auth.interface';
+import { Throttle } from '@nestjs/throttler';
 
 interface RegisterData {
   name: string;
@@ -17,6 +18,12 @@ interface LoginData {
   accessToken: string;
 }
 
+@Throttle({
+  default: {
+    ttl: 60000,
+    limit: 5,
+  },
+})
 @Controller()
 export class AuthController {
   constructor(
@@ -26,7 +33,9 @@ export class AuthController {
 
   @Post('register')
   @UsePipes(new ZodValidationPipe(RegisterSchema))
-  async register(@Body() registerDto: RegisterDto): Promise<ResponseInterface<RegisterData>> {
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<ResponseInterface<RegisterData>> {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     const register = await this.authService.register({
@@ -49,7 +58,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginSchema))
-  async login(@Body() loginDto: LoginDto): Promise<ResponseInterface<LoginData>> {
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<ResponseInterface<LoginData>> {
     const login = await this.authService.login({
       username: loginDto.username,
       email: loginDto.email,

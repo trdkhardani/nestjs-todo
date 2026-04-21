@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ResponseInterface } from '../interfaces/response.interface';
+import { PinoLogger } from 'nestjs-pino';
 
 interface ErrorResponse extends ResponseInterface<any> {
   statusCode: HttpStatus;
@@ -15,7 +16,7 @@ interface ErrorResponse extends ResponseInterface<any> {
 
 @Catch()
 export class CatchEverythingFilter implements ExceptionFilter {
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(private readonly httpAdapterHost: HttpAdapterHost, private readonly logger: PinoLogger) {}
 
   catch(exception: HttpException, host: ArgumentsHost): void {
     // In certain situations `httpAdapter` might not be available in the
@@ -42,7 +43,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
       // else if (requestMethod)
     }
 
-    if (httpStatus >= 500) console.error(exception.stack);
+    if (httpStatus >= 500) this.logger.error(exception);
     const responseBody: ErrorResponse = {
       statusCode: httpStatus,
       success: false,
@@ -50,7 +51,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
       message:
         httpStatus >= 500
           ? 'Internal Server Error'
-          : (exception.getResponse()['message'] as string),
+          : (exception.getResponse()['message'] as string) || 'Error',
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, responseBody.statusCode);

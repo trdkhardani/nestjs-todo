@@ -10,4 +10,5 @@ export default () => ({
   logLevel: env.LOG_LEVEL,
   databaseUrl: env.DATABASE_URL,
   jwtSecretKey: env.JWT_SECRET_KEY,
+  redisUrl: env.REDIS_URL,
 });

@@ -12,6 +12,7 @@ import { CategoryModule } from './modules/categories/categories.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { CacheModule } from './core/cache/cache.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { LoggerModule } from 'nestjs-pino';
     TaskModule,
     CategoryModule,
     AdminModule,
+    CacheModule,
   ],
   providers: [
     {
@@ -89,6 +91,10 @@ import { LoggerModule } from 'nestjs-pino';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: CacheInterceptor,
+    // },
   ],
 })
 export class AppModule {}

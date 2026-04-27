@@ -3,9 +3,10 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { TaskService } from './tasks.service';
 import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
-import { type CreateTaskDto, CreateTaskSchema, type GetTasksDto, GetTasksSchema, type UpdateTaskDto, UpdateTaskSchema } from './dto/task.dto';
+import { type CreateBulkTaskDto, CreateBulkTaskSchema, type CreateTaskDto, CreateTaskSchema, type GetTasksDto, GetTasksSchema, type UpdateTaskDto, UpdateTaskSchema } from './dto/task.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { CacheService } from 'src/core/cache/cache.service';
+import { TasksQueueService } from 'src/core/queue/tasks-queue.service';
 
 interface TaskMutationData {
   id: string;
@@ -27,10 +28,19 @@ interface TaskStatusData {
   status: string;
 }
 
+interface BulkTaskCreation {
+  data: {
+    user_id: string;
+    title: string;
+    categoryId: string;
+    description: string;
+  }[];
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class TaskController {
-  constructor(private taskService: TaskService, private cache: CacheService) {}
+  constructor(private taskService: TaskService, private cache: CacheService, private readonly tasksQueueService: TasksQueueService) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateTaskSchema))
@@ -53,6 +63,23 @@ export class TaskController {
         description: createTask.task_description,
       },
       message: 'Task created successfully.',
+    };
+  }
+
+  @Post('bulk')
+  @UsePipes(new ZodValidationPipe(CreateBulkTaskSchema))
+  async bulkCreateTasks(@Req() req: UserPayload, @Body() createBulkTaskDto: CreateBulkTaskDto): Promise<ResponseInterface<any>> {
+    await this.tasksQueueService.addJob({
+      userId: req.user.sub,
+      tasks: createBulkTaskDto.tasks,
+    });
+
+    await this.cache.delete(`cache:tasks:${req.user.sub}:get-tasks`);
+
+    return {
+      success: true,
+      data: {},
+      message: 'Tasks will be created shortly.',
     };
   }
 

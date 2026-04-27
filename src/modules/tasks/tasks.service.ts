@@ -73,6 +73,12 @@ export class TaskService {
     });
   }
 
+  // async bulkCreateTasks(): Promise<TaskMutation[]> {
+  //   return await this.prisma.task.createMany({
+  //     data: [],
+  //   });
+  // }
+
   async getTasks(getTasksInput: GetTasksInput): Promise<TaskListItem[]> {
     return await this.prisma.task.findMany({
       where: {

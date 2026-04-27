@@ -10,7 +10,7 @@ export class CacheService {
     return this.cacheManager.get(key);
   }
 
-  async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
+  async set(key: string, value: unknown, ttl: number = 1000 * 60 * 5): Promise<boolean> {
     await this.cacheManager.set(key, value, ttl);
     return true;
   }

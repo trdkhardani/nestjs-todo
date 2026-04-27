@@ -13,6 +13,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from './core/cache/cache.module';
+import { QueueModule } from './core/queue/queue.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { CacheModule } from './core/cache/cache.module';
     CategoryModule,
     AdminModule,
     CacheModule,
+    QueueModule,
   ],
   providers: [
     {

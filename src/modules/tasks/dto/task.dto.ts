@@ -7,7 +7,9 @@ export const CreateTaskSchema = z.object({
   categoryId: z.uuid().optional(),
 });
 
-export type CreateTaskDto = z.infer<typeof CreateTaskSchema>;
+export const CreateBulkTaskSchema = z.object({
+  tasks: z.array(CreateTaskSchema).max(10),
+});
 
 export const GetTasksSchema = z.object({
   page: z.int().default(1).optional(),
@@ -15,12 +17,13 @@ export const GetTasksSchema = z.object({
   status: z.enum([TaskStatus.FINISHED, TaskStatus.UNFINISHED]).optional(),
 });
 
-export type GetTasksDto = z.infer<typeof GetTasksSchema>;
-
 export const UpdateTaskSchema = z.object({
   title: z.string().max(30).optional(),
   description: z.string().max(30).optional(),
   categoryId: z.uuid().optional().nullable(),
 });
 
+export type CreateTaskDto = z.infer<typeof CreateTaskSchema>;
+export type CreateBulkTaskDto = z.infer<typeof CreateBulkTaskSchema>;
+export type GetTasksDto = z.infer<typeof GetTasksSchema>;
 export type UpdateTaskDto = z.infer<typeof UpdateTaskSchema>;

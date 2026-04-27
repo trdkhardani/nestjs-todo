@@ -5,6 +5,7 @@ import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { type UpdateUserDto, UpdateUserSchema, type ChangePasswordDto, ChangePasswordSchema } from './dto/user.dto';
+import { CacheService } from 'src/core/cache/cache.service';
 
 interface UserInfoData {
   id: string;
@@ -27,15 +28,21 @@ interface DeleteUserData {
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private cache: CacheService) {}
 
   @Get()
   async info(@Req() req: UserPayload): Promise<ResponseInterface<UserInfoData>> {
+    const redisKey = `cache:users:${req.user.sub}:info`;
+    const cachedValue = await this.cache.get(redisKey);
+    if (cachedValue) {
+      return cachedValue as Promise<ResponseInterface<UserInfoData>>;
+    }
+
     const userInfo = await this.userService.info({
       userId: req.user.sub,
     });
 
-    return {
+    const response = {
       success: true,
       data: {
         id: userInfo!.user_id,
@@ -46,6 +53,8 @@ export class UserController {
       },
       message: 'User info retrieved successfully.',
     };
+    await this.cache.set(redisKey, response);
+    return response;
   }
 
   @Patch()
@@ -56,6 +65,8 @@ export class UserController {
       username: updateUserDto.username,
       name: updateUserDto.name,
     });
+
+    await this.cache.delete(`cache:users:${req.user.sub}:info`);
 
     return {
       success: true,

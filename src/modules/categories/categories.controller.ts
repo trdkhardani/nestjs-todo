@@ -6,6 +6,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import type { ResponseInterface } from 'src/common/interfaces/response.interface';
+import { CacheService } from 'src/core/cache/cache.service';
 
 interface CategoryData {
   id: string;
@@ -15,7 +16,7 @@ interface CategoryData {
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService, private cache: CacheService) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateCategorySchema))
@@ -37,6 +38,12 @@ export class CategoryController {
 
   @Get()
   async getCategories(@Req() req: UserPayload): Promise<ResponseInterface<CategoryData[]>> {
+    const redisKey = `cache:categories:${req.user.sub}:get-categories`;
+    const cachedValue = await this.cache.get(redisKey);
+    if (cachedValue) {
+      return cachedValue as Promise<ResponseInterface<CategoryData[]>>;
+    }
+
     const categories = await this.categoryService.getCategories({
       userId: req.user.sub,
     });
@@ -58,6 +65,8 @@ export class CategoryController {
       userId: req.user.sub,
       name: updateCategoryDto.name,
     });
+
+    await this.cache.delete(`cache:categories:${req.user.sub}:get-categories`);
 
     return {
       success: true,

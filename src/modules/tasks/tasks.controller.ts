@@ -5,6 +5,7 @@ import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import { type CreateTaskDto, CreateTaskSchema, type GetTasksDto, GetTasksSchema, type UpdateTaskDto, UpdateTaskSchema } from './dto/task.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
+import { CacheService } from 'src/core/cache/cache.service';
 
 interface TaskMutationData {
   id: string;
@@ -29,7 +30,7 @@ interface TaskStatusData {
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class TaskController {
-  constructor(private taskService: TaskService) {}
+  constructor(private taskService: TaskService, private cache: CacheService) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateTaskSchema))
@@ -40,6 +41,8 @@ export class TaskController {
       description: createTaskDto.description,
       categoryId: createTaskDto.categoryId,
     });
+
+    await this.cache.delete(`cache:tasks:${req.user.sub}:get-tasks`);
 
     return {
       success: true,
@@ -56,6 +59,12 @@ export class TaskController {
   @Get()
   @UsePipes(new ZodValidationPipe(GetTasksSchema))
   async getTasks(@Req() req: UserPayload, @Query() getTasksDto: GetTasksDto): Promise<ResponseInterface<TaskListItemData[]>> {
+    const redisKey = `cache:tasks:${req.user.sub}:get-tasks`;
+    const cachedValue = await this.cache.get(redisKey);
+    if (cachedValue) {
+      return cachedValue as Promise<ResponseInterface<TaskListItemData[]>>;
+    }
+
     const tasks = await this.taskService.getTasks({
       userId: req.user.sub,
       page: Number(getTasksDto.page),
@@ -63,7 +72,7 @@ export class TaskController {
       status: getTasksDto.status,
     });
 
-    return {
+    const response = {
       success: true,
       data: tasks.map((task) => ({
         id: task.task_id,
@@ -74,16 +83,24 @@ export class TaskController {
       })),
       message: 'Tasks retrieved successfully.',
     };
+    await this.cache.set(redisKey, response);
+    return response;
   }
 
   @Get(':taskId')
   async getTaskById(@Req() req: UserPayload, @Param('taskId') taskId: string): Promise<ResponseInterface<TaskListItemData>> {
+    const redisKey = `cache:tasks:${req.user.sub}:get-task:${taskId}`;
+    const cachedValue = await this.cache.get(redisKey);
+    if (cachedValue) {
+      return cachedValue as Promise<ResponseInterface<TaskListItemData>>;
+    }
+
     const task = await this.taskService.getTaskById({
       userId: req.user.sub,
       taskId,
     });
 
-    return {
+    const response = {
       success: true,
       data: {
         id: task.task_id,
@@ -94,6 +111,8 @@ export class TaskController {
       },
       message: 'Task retrieved successfully.',
     };
+    await this.cache.set(redisKey, response);
+    return response;
   }
 
   @Patch(':taskId')
@@ -105,6 +124,8 @@ export class TaskController {
       description: updateTaskDto.description,
       categoryId: updateTaskDto.categoryId,
     });
+
+    await this.cache.delete(`cache:tasks:${req.user.sub}:get-task:${taskId}`);
 
     return {
       success: true,
@@ -124,6 +145,8 @@ export class TaskController {
       userId: req.user.sub,
       taskId,
     });
+
+    await this.cache.delete(`cache:tasks:${req.user.sub}:get-task:${taskId}`);
 
     return {
       success: true,

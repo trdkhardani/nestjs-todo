@@ -9,7 +9,12 @@ import { ConfigService } from '@nestjs/config';
     NestCacheModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        stores: [createKeyv(configService.get<string>('redisUrl'))],
+        stores: [
+          createKeyv(configService.get<string>('redisUrl'), {
+            connectionTimeout: 1000,
+            throwOnConnectError: true,
+          }),
+        ],
       }),
     }),
   ],

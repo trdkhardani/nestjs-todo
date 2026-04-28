@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.8.3/dist/socket.io.min.js"></script>
+    <title>WebSocket Connect</title>
+  </head>
+  <body>
+    <p class="socket-connect">Waiting for connection...</p>
+    <script src="/js/index.js"></script>
+    <!-- <script>
+      const socket = io("http://localhost:3001", {
+        query: {
+          userId: "test-user",
+        },
+      });
+
+      const socketElm = document.querySelector(".socket");
+
+      socket.on("connect", () => {
+        socketElm.textContent = `connected: ${socket.id}`;
+      });
+    </script> -->
+  </body>
+</html>

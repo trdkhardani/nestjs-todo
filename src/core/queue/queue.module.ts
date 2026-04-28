@@ -6,6 +6,9 @@ import { TasksQueueProcessor } from './tasks-queue.processor';
 import { DatabaseModule } from '../database/database.module';
 import { Connection } from 'mongoose';
 import { JobSchema } from './entities/job.entity';
+import { NotificationService } from './queue-notification.service';
+import { RedisModule } from '@nestjs-modules/ioredis';
+import { WsModule } from 'src/websocket/ws.module';
 
 @Module({
   imports: [
@@ -21,6 +24,14 @@ import { JobSchema } from './entities/job.entity';
     BullModule.registerQueue({
       name: 'tasks-queue',
     }),
+    RedisModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'single',
+        url: configService.get<string>('redisUrl'),
+      }),
+    }),
+    WsModule,
   ],
   providers: [
     TasksQueueProcessor,

@@ -15,6 +15,8 @@ import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from './core/cache/cache.module';
 import { QueueModule } from './core/queue/queue.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { WsGateway } from './websocket/ws.gateway';
+import { WsModule } from './websocket/ws.module';
 
 @Module({
   imports: [
@@ -55,6 +57,10 @@ import { JobsModule } from './modules/jobs/jobs.module';
             path: 'admin',
             module: AdminModule,
           },
+          {
+            path: 'jobs',
+            module: JobsModule,
+          },
         ],
       },
     ]),
@@ -81,6 +87,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     CacheModule,
     QueueModule,
     JobsModule,
+    WsModule,
   ],
   providers: [
     {

@@ -4,6 +4,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { TasksQueueProcessor } from './tasks-queue.processor';
 import { DatabaseModule } from '../database/database.module';
+import { Connection } from 'mongoose';
+import { JobSchema } from './entities/job.entity';
 
 @Module({
   imports: [
@@ -20,7 +22,16 @@ import { DatabaseModule } from '../database/database.module';
       name: 'tasks-queue',
     }),
   ],
-  providers: [TasksQueueProcessor, TasksQueueService],
+  providers: [
+    TasksQueueProcessor,
+    TasksQueueService,
+    {
+      provide: 'JOB_MODEL',
+      useFactory: (connection: Connection) =>
+        connection.model('Job', JobSchema),
+      inject: ['MONGODB_CONNECTION'],
+    },
+  ],
   exports: [TasksQueueService],
 })
 export class QueueModule {}

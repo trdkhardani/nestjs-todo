@@ -9,6 +9,7 @@ export default () => ({
   nodeEnv: env.NODE_ENV,
   logLevel: env.LOG_LEVEL,
   databaseUrl: env.DATABASE_URL,
+  mongoDbUrl: env.MONGODB_URL,
   jwtSecretKey: env.JWT_SECRET_KEY,
   redisUrl: env.REDIS_URL,
 });

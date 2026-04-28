@@ -1,6 +1,9 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { PrismaService } from '../database/prisma.service';
 import { ExtendedJob, JobTasksData } from './interfaces/tasks-queue.interface';
+import { Model } from 'mongoose';
+import { JobDoc, JobStatus } from './interfaces/job.interface';
+import { Inject } from '@nestjs/common';
 
 @Processor('tasks-queue', {
   removeOnComplete: {
@@ -11,28 +14,62 @@ import { ExtendedJob, JobTasksData } from './interfaces/tasks-queue.interface';
   },
 })
 export class TasksQueueProcessor extends WorkerHost {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Inject('JOB_MODEL')
+    private jobModel: Model<JobDoc>,
+  ) {
     super();
   }
 
   async process(job: ExtendedJob<JobTasksData>) {
     try {
       console.log(`Processing Job... \n ID: ${job.id} \n Name: ${job.name}`);
+      const createJobLog = new this.jobModel({
+        jobId: job.id,
+        userId: job.data.userId,
+        jobName: job.name,
+        queueName: job.queueName,
+      });
+      const saveJob = await createJobLog.save();
+      console.log(saveJob);
+
       const tasksData = job.data.tasks.map((task) => {
         return {
           task_title: task.title,
           ...(task.description ? { task_description: task.description } : {}),
           user_id: job.data.userId,
-          ...(task.categoryId ? { category_id: task.categoryId } : {}),
+          ...(task.categoryId ? { category_id: task.categoryId } : {lakponyeh: true}),
         };
       });
+
       console.log(tasksData);
       await this.prisma.task.createMany({
         data: tasksData,
       });
+
+      const currentJob = await this.jobModel.findOne({
+        jobId: job.id,
+        userId: job.data.userId,
+      });
+      if (currentJob) {
+        currentJob.finishedAt = new Date();
+        currentJob.status = JobStatus.SUCCESSFUL;
+        await currentJob.save();
+      }
       console.log(`Job with ID ${job.id} successfully processed.`);
     } catch (err) {
       console.error(`Job with ID ${job.id} failed: ${err}`);
+      await this.jobModel.findOneAndUpdate(
+        {
+          jobId: job.id,
+          userId: job.data.userId,
+        },
+        {
+          status: JobStatus.FAILED,
+          finishedAt: new Date(),
+        },
+      );
     }
   }
 }

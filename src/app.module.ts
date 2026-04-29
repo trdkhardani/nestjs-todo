@@ -14,7 +14,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from './core/cache/cache.module';
 import { QueueModule } from './core/queue/queue.module';
-import { JobsModule } from './modules/jobs/jobs.module';
+import { JobModule } from './modules/jobs/jobs.module';
 import { WsGateway } from './websocket/ws.gateway';
 import { WsModule } from './websocket/ws.module';
 
@@ -59,7 +59,7 @@ import { WsModule } from './websocket/ws.module';
           },
           {
             path: 'jobs',
-            module: JobsModule,
+            module: JobModule,
           },
         ],
       },
@@ -86,7 +86,7 @@ import { WsModule } from './websocket/ws.module';
     AdminModule,
     CacheModule,
     QueueModule,
-    JobsModule,
+    JobModule,
     WsModule,
   ],
   providers: [

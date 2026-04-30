@@ -9,6 +9,24 @@ import { JobSchema } from './entities/job.entity';
 import { NotificationService } from './queue-notification.service';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { WsModule } from 'src/websocket/ws.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { EjsAdapter } from '@nestjs-modules/mailer/adapters/ejs.adapter';
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { EmailQueueProcessor } from './email-queue.processor';
+import { EmailQueueService } from './email-queue.service';
+
+const resolveMailTemplateDir = () => {
+  const candidates = [
+    join(process.cwd(), 'dist', 'src', 'mail', 'templates'),
+    join(process.cwd(), 'dist', 'mail', 'templates'),
+    join(process.cwd(), 'src', 'mail', 'templates'),
+  ];
+
+  return (
+    candidates.find((candidate) => existsSync(candidate)) ?? candidates[0]
+  );
+};
 
 @Module({
   imports: [
@@ -31,6 +49,36 @@ import { WsModule } from 'src/websocket/ws.module';
         url: configService.get<string>('redisUrl'),
       }),
     }),
+    BullModule.registerQueue({
+      name: 'email-queue',
+    }),
+    MailerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('mailHost'),
+          secure:
+            configService.get<string>('mailHost') === 'development'
+              ? false
+              : true,
+          port: 465,
+          auth: {
+            user: configService.get<string>('mailUser'),
+            pass: configService.get<string>('mailPass'),
+          },
+        },
+        defaults: {
+          from: 'NestJS ToDo App <noreply@example.com>',
+        },
+        template: {
+          dir: resolveMailTemplateDir(),
+          adapter: new EjsAdapter(),
+          options: {
+            strict: false,
+          },
+        },
+      }),
+    }),
     WsModule,
   ],
   providers: [
@@ -42,7 +90,9 @@ import { WsModule } from 'src/websocket/ws.module';
         connection.model('Job', JobSchema),
       inject: ['MONGODB_CONNECTION'],
     },
+    EmailQueueProcessor,
+    EmailQueueService,
   ],
-  exports: [TasksQueueService],
+  exports: [TasksQueueService, EmailQueueService],
 })
 export class QueueModule {}

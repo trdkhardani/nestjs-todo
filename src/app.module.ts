@@ -15,8 +15,10 @@ import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from './core/cache/cache.module';
 import { QueueModule } from './core/queue/queue.module';
 import { JobModule } from './modules/jobs/jobs.module';
-import { WsGateway } from './websocket/ws.gateway';
 import { WsModule } from './websocket/ws.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { EjsAdapter } from '@nestjs-modules/mailer/adapters/ejs.adapter';
+import { join } from 'path';
 
 @Module({
   imports: [

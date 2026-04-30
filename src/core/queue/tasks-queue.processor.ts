@@ -1,6 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { PrismaService } from '../database/prisma.service';
-import { ExtendedJob, JobTasksData } from './interfaces/tasks-queue.interface';
+import { ExtendedJob } from './interfaces/job.interface';
+import { JobTasksData } from './interfaces/tasks-queue.interface';
 import { Model } from 'mongoose';
 import { JobDoc, JobStatus } from './interfaces/job.interface';
 import { Inject } from '@nestjs/common';

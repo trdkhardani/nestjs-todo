@@ -71,9 +71,9 @@ export class UserController {
     return {
       success: true,
       data: {
-        id: userUpdate.user_id,
-        username: userUpdate.user_username,
-        name: userUpdate.user_name,
+        id: userUpdate!.user_id,
+        username: userUpdate!.user_username,
+        name: userUpdate!.user_name,
       },
       message: 'User data updated successfully.',
     };
@@ -91,9 +91,9 @@ export class UserController {
     return {
       success: true,
       data: {
-        id: updatePassword.user_id,
-        username: updatePassword.user_username,
-        name: updatePassword.user_name,
+        id: updatePassword!.user_id,
+        username: updatePassword!.user_username,
+        name: updatePassword!.user_name,
       },
       message: 'Password changed successfully.',
     };
@@ -108,7 +108,7 @@ export class UserController {
     return {
       success: true,
       data: {
-        id: deleteUser.user_id,
+        id: deleteUser!.user_id,
       },
       message: 'User deleted successfully.',
     };

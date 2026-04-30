@@ -14,6 +14,11 @@ export interface LoginInput {
   password: string;
 }
 
+export interface VerificationInput {
+  userId: string;
+  otpCode: string;
+}
+
 export interface JwtPayload {
   sub: string;
   username: string;

@@ -12,4 +12,7 @@ export default () => ({
   mongoDbUrl: env.MONGODB_URL,
   jwtSecretKey: env.JWT_SECRET_KEY,
   redisUrl: env.REDIS_URL,
+  mailHost: env.MAIL_HOST,
+  mailUser: env.MAIL_USER,
+  mailPass: env.MAIL_PASS,
 });

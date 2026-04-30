@@ -1,8 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { User, Prisma } from 'generated/prisma/client';
 import * as bcrypt from 'bcrypt';
 import { LoginInput, RegisterInput } from './interfaces/auth.interface';
+import { VerificationInput } from './interfaces/auth.interface';
+import { CacheService } from 'src/core/cache/cache.service';
+import { EmailQueueService } from 'src/core/queue/email-queue.service';
+import { ConfigService } from '@nestjs/config';
 
 type LoginUser = Prisma.UserGetPayload<{
   select: {
@@ -10,22 +14,141 @@ type LoginUser = Prisma.UserGetPayload<{
     user_username: true;
     user_password: true;
     user_role: true;
+    user_is_verified: true;
   };
 }>;
 
+interface UserWithOtp extends User {
+  otpCode: string;
+}
+
+const generatePlainOtp = () => {
+  const chars = '0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+    private readonly configService: ConfigService,
+    private readonly emailQueueService: EmailQueueService,
+  ) {}
 
-  async register(registerInput: RegisterInput): Promise<User> {
-    return await this.prisma.user.create({
+  async register(registerInput: RegisterInput): Promise<UserWithOtp> {
+    const hashedPassword = await bcrypt.hash(registerInput.password, 12);
+    const createUser = await this.prisma.user.create({
       data: {
         user_username: registerInput.username,
         user_name: registerInput.name,
         user_email: registerInput.email,
-        user_password: registerInput.password,
+        user_password: hashedPassword,
       },
     });
+
+    const otpCode = generatePlainOtp();
+    const hashedOtpCode = await bcrypt.hash(otpCode, 12);
+
+    const redisKey = `otp:${createUser.user_id}`;
+    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 3);
+
+    await this.emailQueueService.addJob('send-verification-email', {
+      name: createUser.user_name,
+      email: createUser.user_email,
+      otpCode: otpCode,
+      mailerInput: {
+        subject: 'Email Verification',
+        template: './email-verification',
+      },
+    });
+
+    return {
+      ...createUser,
+      otpCode,
+    };
+  }
+
+  async resendVerification(email: string): Promise<{otpCode: string | null}> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        user_email: email,
+        user_is_verified: false,
+      },
+      select: {
+        user_id: true,
+        user_name: true,
+        user_email: true,
+      },
+    });
+
+    if (!user) {
+      return {
+        otpCode: null,
+      };
+    }
+
+    const otpCode = generatePlainOtp();
+    const hashedOtpCode = await bcrypt.hash(otpCode, 12);
+
+    const redisKey = `otp:${user.user_id}`;
+    await this.cache.delete(redisKey);
+    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 3);
+
+    await this.emailQueueService.addJob('resend-verification-email', {
+      name: user.user_name,
+      email: user.user_email,
+      otpCode: otpCode,
+      mailerInput: {
+        subject: 'Email Verification',
+        template: './email-verification',
+      },
+    });
+
+    return {
+      otpCode,
+    };
+  }
+
+  async verify(verificationInput: VerificationInput): Promise<User> {
+    const redisKey = `otp:${verificationInput.userId}`;
+    const hashedOtpCode = await this.cache.get(redisKey);
+    if (!hashedOtpCode) {
+      throw new UnauthorizedException('Invalid OTP Code', {
+        description: 'OTP Code Invalid Caused by Expiration or Does Not Match',
+      });
+    }
+    const isOtpCodeCorrect = await bcrypt.compare(
+      verificationInput.otpCode,
+      hashedOtpCode as string,
+    );
+
+    if (!isOtpCodeCorrect) {
+      throw new UnauthorizedException('Invalid OTP Code', {
+        description: 'OTP Code Invalid Caused by Expiration or Does Not Match',
+      });
+    }
+
+    const user = await this.prisma.user.update({
+      where: {
+        user_id: verificationInput.userId,
+      },
+      data: {
+        user_is_verified: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    await this.cache.delete(redisKey);
+
+    return user;
   }
 
   async login(loginInput: LoginInput): Promise<LoginUser> {
@@ -45,6 +168,7 @@ export class AuthService {
         user_username: true,
         user_password: true,
         user_role: true,
+        user_is_verified: true,
       },
     });
 
@@ -54,11 +178,20 @@ export class AuthService {
       });
     }
 
-    const checkPassword = await bcrypt.compare(loginInput.password, login?.user_password as string);
+    const checkPassword = await bcrypt.compare(
+      loginInput.password,
+      login?.user_password,
+    );
 
     if (!checkPassword) {
       throw new UnauthorizedException('Invalid username/email or password.', {
         description: 'Invalid Credentials Error',
+      });
+    }
+
+    if (!login?.user_is_verified) {
+      throw new UnauthorizedException('User is not verified yet', {
+        description: 'User Have Not Verify Email',
       });
     }
 

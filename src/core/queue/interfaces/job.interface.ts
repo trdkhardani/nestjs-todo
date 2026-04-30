@@ -1,4 +1,9 @@
 import { Document } from 'mongoose';
+import { Job } from 'bullmq';
+
+export interface ExtendedJob<T> extends Job {
+  data: T;
+}
 
 export enum JobStatus {
   PENDING = 'pending',

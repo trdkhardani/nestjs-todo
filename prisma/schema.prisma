@@ -20,6 +20,7 @@ model User {
   user_email        String     @unique @db.VarChar(50)
   user_password     String
   user_role         UserRole   @default(USER)
+  user_is_verified  Boolean    @default(false)
   user_date_created DateTime   @default(now())
   user_date_updated DateTime   @updatedAt
   tasks             Task[]

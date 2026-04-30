@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import {
   ChangePasswordInput,
@@ -44,7 +44,7 @@ export class UserService {
   constructor(private prisma: PrismaService) {}
 
   async info(userInfoInput: UserInfoInput): Promise<UserInfo | null> {
-    return await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         user_id: userInfoInput.userId,
       },
@@ -56,10 +56,18 @@ export class UserService {
         user_role: true,
       },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found', {
+        description: 'User not found',
+      });
+    }
+
+    return user;
   }
 
-  async updateUser(updateUserInput: UpdateUserInput): Promise<UserSummary> {
-    return await this.prisma.user.update({
+  async updateUser(updateUserInput: UpdateUserInput): Promise<UserSummary | null> {
+    const updateUser = await this.prisma.user.update({
       where: {
         user_id: updateUserInput.userId,
       },
@@ -73,9 +81,17 @@ export class UserService {
         user_username: true,
       },
     });
+
+    if (!updateUser) {
+      throw new NotFoundException('User not found', {
+        description: 'User not found',
+      });
+    }
+
+    return updateUser;
   }
 
-  async changeUserPassword(changePasswordInput: ChangePasswordInput): Promise<UserSummary> {
+  async changeUserPassword(changePasswordInput: ChangePasswordInput): Promise<UserSummary | null> {
     const userInfo: UserPassword | null = await this.prisma.user.findUnique({
       where: {
         user_id: changePasswordInput.userId,
@@ -84,6 +100,12 @@ export class UserService {
         user_password: true,
       },
     });
+
+    if (!userInfo) {
+      throw new NotFoundException('User not found', {
+        description: 'User not found',
+      });
+    }
 
     const verifyOldPassword = await bcrypt.compare(changePasswordInput.oldPassword, userInfo?.user_password as string);
     if (!verifyOldPassword) {
@@ -108,8 +130,8 @@ export class UserService {
     });
   }
 
-  async deleteUser(deleteUserInput: DeleteUserInput): Promise<DeletedUser> {
-    return await this.prisma.user.delete({
+  async deleteUser(deleteUserInput: DeleteUserInput): Promise<DeletedUser | null> {
+    const deleteUser = await this.prisma.user.delete({
       where: {
         user_id: deleteUserInput.userId,
       },
@@ -117,5 +139,13 @@ export class UserService {
         user_id: true,
       },
     });
+
+    if (!deleteUser) {
+      throw new NotFoundException('User not found', {
+        description: 'User not found',
+      });
+    }
+
+    return deleteUser;
   }
 }

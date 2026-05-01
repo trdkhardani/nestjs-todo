@@ -16,15 +16,16 @@ import { join } from 'path';
 import { EmailQueueProcessor } from './email-queue.processor';
 import { EmailQueueService } from './email-queue.service';
 
-const resolveMailTemplateDir = () => {
+const getMailTemplateDirs = () => {
   const candidates = [
-    join(process.cwd(), 'dist', 'src', 'mail', 'templates'),
-    join(process.cwd(), 'dist', 'mail', 'templates'),
     join(process.cwd(), 'src', 'mail', 'templates'),
+    join(process.cwd(), 'dist', 'mail', 'templates'),
+    join(process.cwd(), 'dist', 'src', 'mail', 'templates'),
   ];
 
-  return (
-    candidates.find((candidate) => existsSync(candidate)) ?? candidates[0]
+  return candidates.filter(
+    (candidate, index) =>
+      candidates.indexOf(candidate) === index && existsSync(candidate),
   );
 };
 
@@ -71,7 +72,8 @@ const resolveMailTemplateDir = () => {
           from: 'NestJS ToDo App <noreply@example.com>',
         },
         template: {
-          dir: resolveMailTemplateDir(),
+          dir: join(process.cwd(), 'src', 'mail', 'templates'),
+          dirs: getMailTemplateDirs(),
           adapter: new EjsAdapter(),
           options: {
             strict: false,

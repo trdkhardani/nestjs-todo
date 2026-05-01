@@ -19,6 +19,9 @@ import { WsModule } from './websocket/ws.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EjsAdapter } from '@nestjs-modules/mailer/adapters/ejs.adapter';
 import { join } from 'path';
+import { UtilsModule } from './utils/utils.module';
+import { PlainOtpService } from './utils/plain-otp/plain-otp.service';
+import { EncryptionUtilsService } from './utils/encryption-utils/encryption-utils.service';
 
 @Module({
   imports: [
@@ -90,6 +93,7 @@ import { join } from 'path';
     QueueModule,
     JobModule,
     WsModule,
+    UtilsModule,
   ],
   providers: [
     {
@@ -104,6 +108,8 @@ import { join } from 'path';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
+    PlainOtpService,
+    EncryptionUtilsService,
     // {
     //   provide: APP_INTERCEPTOR,
     //   useClass: CacheInterceptor,

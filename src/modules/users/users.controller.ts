@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Patch, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UserService } from './users.service';
 import type { UserPayload } from 'src/modules/auth/interfaces/auth.interface';
 import { ResponseInterface } from 'src/common/interfaces/response.interface';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
-import { type UpdateUserDto, UpdateUserSchema, type ChangePasswordDto, ChangePasswordSchema } from './dto/user.dto';
+import { type UpdateUserDto, UpdateUserSchema, type ChangePasswordDto, ChangePasswordSchema, ActivateMfaSchema, type ActivateMfaDto, VerifyMfaSchema, type VerifyMfaDto } from './dto/user.dto';
 import { CacheService } from 'src/core/cache/cache.service';
 
 interface UserInfoData {
@@ -76,6 +76,48 @@ export class UserController {
         name: userUpdate!.user_name,
       },
       message: 'User data updated successfully.',
+    };
+  }
+
+  @Post('/mfa-activation')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(ActivateMfaSchema))
+  async activateMfa(@Req() req: UserPayload, @Body() activateMfaDto: ActivateMfaDto): Promise<ResponseInterface<object>> {
+    const activateMfa = await this.userService.activateMfa({
+      userId: req.user.sub,
+      mfaMethod: activateMfaDto.mfaMethod,
+    });
+
+    return {
+      success: true,
+      data: {
+        token: activateMfa.token,
+      },
+      message:
+        activateMfaDto.mfaMethod === 'AUTHENTICATOR_APP_TOTP'
+          ? 'Scan the QR Code with your Authenticator App'
+          : 'OTP Code will be sent to you',
+    };
+  }
+
+  @Patch('/mfa-verification')
+  @UsePipes(new ZodValidationPipe(VerifyMfaSchema))
+  async verifyMfa(@Req() req: UserPayload, @Body() verifyMfaDto: VerifyMfaDto): Promise<ResponseInterface<object>> {
+    const verifyMfa = await this.userService.verifyMfa({
+      userId: req.user.sub,
+      mfaMethod: verifyMfaDto.mfaMethod,
+      otpCode: verifyMfaDto.otpCode,
+    });
+
+    return {
+      success: true,
+      data: {
+        id: verifyMfa.user_id,
+        username: verifyMfa.user_username,
+        name: verifyMfa.user_name,
+        mfaMethod: verifyMfa.user_mfa_methods,
+      },
+      message: 'MFA successfully activated',
     };
   }
 

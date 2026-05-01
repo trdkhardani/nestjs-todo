@@ -1,3 +1,4 @@
+import { MfaMethods } from 'generated/prisma/enums';
 import z from 'zod';
 
 export const UpdateUserSchema = z
@@ -16,7 +17,14 @@ export const UpdateUserSchema = z
     }
   });
 
-export type UpdateUserDto = z.infer<typeof UpdateUserSchema>;
+export const ActivateMfaSchema = z.object({
+  mfaMethod: z.enum(MfaMethods),
+});
+
+export const VerifyMfaSchema = z.object({
+  otpCode: z.coerce.string().min(6).max(6),
+  mfaMethod: z.enum(MfaMethods),
+});
 
 export const ChangePasswordSchema = z
   .object({
@@ -25,4 +33,7 @@ export const ChangePasswordSchema = z
   })
   .required();
 
+export type UpdateUserDto = z.infer<typeof UpdateUserSchema>;
+export type ActivateMfaDto = z.infer<typeof ActivateMfaSchema>;
+export type VerifyMfaDto = z.infer<typeof VerifyMfaSchema>;
 export type ChangePasswordDto = z.infer<typeof ChangePasswordSchema>;

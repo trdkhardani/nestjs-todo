@@ -7,6 +7,7 @@ import { VerificationInput } from './interfaces/auth.interface';
 import { CacheService } from 'src/core/cache/cache.service';
 import { EmailQueueService } from 'src/core/queue/email-queue.service';
 import { ConfigService } from '@nestjs/config';
+import { PlainOtpService } from 'src/utils/plain-otp/plain-otp.service';
 
 type LoginUser = Prisma.UserGetPayload<{
   select: {
@@ -22,20 +23,12 @@ interface UserWithOtp extends User {
   otpCode: string;
 }
 
-const generatePlainOtp = () => {
-  const chars = '0123456789';
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private cache: CacheService,
+    private plainOtpService: PlainOtpService,
     private readonly configService: ConfigService,
     private readonly emailQueueService: EmailQueueService,
   ) {}
@@ -51,11 +44,11 @@ export class AuthService {
       },
     });
 
-    const otpCode = generatePlainOtp();
+    const otpCode = this.plainOtpService.generatePlainOtp();
     const hashedOtpCode = await bcrypt.hash(otpCode, 12);
 
     const redisKey = `otp:${createUser.user_id}`;
-    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 3);
+    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 10);
 
     await this.emailQueueService.addJob('send-verification-email', {
       name: createUser.user_name,
@@ -92,12 +85,12 @@ export class AuthService {
       };
     }
 
-    const otpCode = generatePlainOtp();
+    const otpCode = this.plainOtpService.generatePlainOtp();
     const hashedOtpCode = await bcrypt.hash(otpCode, 12);
 
     const redisKey = `otp:${user.user_id}`;
     await this.cache.delete(redisKey);
-    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 3);
+    await this.cache.set(redisKey, hashedOtpCode, 1000 * 60 * 10);
 
     await this.emailQueueService.addJob('resend-verification-email', {
       name: user.user_name,

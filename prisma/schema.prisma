@@ -14,17 +14,30 @@ datasource db {
 }
 
 model User {
-  user_id           String     @id @default(uuid())
-  user_username     String     @unique @db.VarChar(15)
-  user_name         String     @db.VarChar(100)
-  user_email        String     @unique @db.VarChar(50)
+  user_id           String       @id @default(uuid())
+  user_username     String       @unique @db.VarChar(15)
+  user_name         String       @db.VarChar(100)
+  user_email        String       @unique @db.VarChar(50)
   user_password     String
-  user_role         UserRole   @default(USER)
-  user_is_verified  Boolean    @default(false)
-  user_date_created DateTime   @default(now())
-  user_date_updated DateTime   @updatedAt
+  user_role         UserRole     @default(USER)
+  user_is_verified  Boolean      @default(false)
+  user_mfa_methods  MfaMethods[] @default([])
+  user_date_created DateTime     @default(now())
+  user_date_updated DateTime     @updatedAt
   tasks             Task[]
   categories        Category[]
+  totp              Totp?
+}
+
+model Totp {
+  totp_id           String   @id @default(uuid())
+  totp_secret       String   @db.Text // encrypted
+  totp_enabled      Boolean  @default(false)
+  totp_last_used    DateTime?
+  totp_date_created DateTime @default(now())
+  totp_date_updated DateTime @updatedAt
+  user_id           String   @unique
+  user              User     @relation(fields: [user_id], references: [user_id])
 }
 
 model Task {
@@ -58,4 +71,9 @@ enum UserRole {
 enum TaskStatus {
   FINISHED
   UNFINISHED
+}
+
+enum MfaMethods {
+  EMAIL_BASED_OTP
+  AUTHENTICATOR_APP_TOTP
 }

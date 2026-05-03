@@ -16,12 +16,9 @@ import { CacheModule } from './core/cache/cache.module';
 import { QueueModule } from './core/queue/queue.module';
 import { JobModule } from './modules/jobs/jobs.module';
 import { WsModule } from './websocket/ws.module';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { EjsAdapter } from '@nestjs-modules/mailer/adapters/ejs.adapter';
-import { join } from 'path';
-import { UtilsModule } from './utils/utils.module';
-import { PlainOtpService } from './utils/plain-otp/plain-otp.service';
-import { EncryptionUtilsService } from './utils/encryption-utils/encryption-utils.service';
+import { HelpersModule } from './helpers/helpers.module';
+import { PlainOtpService } from './helpers/plain-otp/plain-otp.service';
+import { EncryptionService } from './helpers/encryption/encryption.service';
 
 @Module({
   imports: [
@@ -93,7 +90,7 @@ import { EncryptionUtilsService } from './utils/encryption-utils/encryption-util
     QueueModule,
     JobModule,
     WsModule,
-    UtilsModule,
+    HelpersModule,
   ],
   providers: [
     {
@@ -109,7 +106,7 @@ import { EncryptionUtilsService } from './utils/encryption-utils/encryption-util
       useClass: ResponseInterceptor,
     },
     PlainOtpService,
-    EncryptionUtilsService,
+    EncryptionService,
     // {
     //   provide: APP_INTERCEPTOR,
     //   useClass: CacheInterceptor,

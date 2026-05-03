@@ -116,20 +116,19 @@ export class AuthController {
       username: loginDto.username,
       email: loginDto.email,
       password: loginDto.password,
-    });
+    }) as any;
 
-    const payload: JwtPayload = {
-      sub: login?.user_id,
-      username: login?.user_username,
-      role: login?.user_role,
-    };
+    if (login.mfaRequired) {
+      return {
+        success: true,
+        data: login,
+        message: 'Proceed with the MFA process',
+      };
+    }
 
     return {
       success: true,
-      data: {
-        username: login?.user_username,
-        accessToken: this.jwtService.sign(payload),
-      },
+      data: login,
       message: 'Login successful.',
     };
   }

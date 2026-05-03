@@ -30,14 +30,16 @@ model User {
 }
 
 model Totp {
-  totp_id           String   @id @default(uuid())
-  totp_secret       String   @db.Text // encrypted
-  totp_enabled      Boolean  @default(false)
-  totp_last_used    DateTime?
-  totp_date_created DateTime @default(now())
-  totp_date_updated DateTime @updatedAt
-  user_id           String   @unique
-  user              User     @relation(fields: [user_id], references: [user_id])
+  totp_id                String    @id @default(uuid())
+  totp_secret_ciphertext String    @db.Text // encrypted
+  totp_secret_iv         String
+  totp_secret_tag        String
+  totp_enabled           Boolean   @default(false)
+  totp_last_used         DateTime?
+  totp_date_created      DateTime  @default(now())
+  totp_date_updated      DateTime  @updatedAt
+  user_id                String    @unique
+  user                   User      @relation(fields: [user_id], references: [user_id])
 }
 
 model Task {

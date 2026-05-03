@@ -9,14 +9,14 @@ import {
 } from './interfaces/user.interface';
 import { PrismaService } from 'src/core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { generateSecret, generate, verify, generateURI } from "otplib";
 import qrcode from 'qrcode';
 import { CacheService } from 'src/core/cache/cache.service';
 import { EmailQueueService } from '../../core/queue/email-queue.service';
 import { ConfigService } from '@nestjs/config';
 import { VerifyMfaInput } from './interfaces/user.interface';
-import { PlainOtpService } from 'src/utils/plain-otp/plain-otp.service';
-import { EncryptionUtilsService } from 'src/utils/encryption-utils/encryption-utils.service';
+import { PlainOtpService } from 'src/helpers/plain-otp/plain-otp.service';
+import { EncryptionService } from 'src/helpers/encryption/encryption.service';
+import { OtplibTOTPService } from 'src/helpers/otplib/otplib-totp.service';
 
 type UserInfo = Prisma.UserGetPayload<{
   select: {
@@ -62,7 +62,8 @@ export class UserService {
     private emailQueueService: EmailQueueService,
     private configService: ConfigService,
     private plainOtpService: PlainOtpService,
-    private encryptionUtilsService: EncryptionUtilsService,
+    private encryptionService: EncryptionService,
+    private totpService: OtplibTOTPService,
   ) {}
 
   async info(userInfoInput: UserInfoInput): Promise<UserInfo | null> {
@@ -152,12 +153,12 @@ export class UserService {
         );
       }
 
-      const secret = generateSecret();
-      const encryptSecret = this.encryptionUtilsService.encrypt(secret);
+      const secret = this.totpService.generateSecret();
+      const encryptSecret = this.encryptionService.encrypt(secret);
 
       await this.cache.set(redisKey, encryptSecret, 1000 * 60 * 3);
 
-      const uri = generateURI({
+      const uri = this.totpService.generateURI({
         strategy: 'totp',
         issuer: 'NestJS ToDo App',
         label: user.user_email,
@@ -218,19 +219,20 @@ export class UserService {
     }
 
     if (verifyMfaInput.mfaMethod === 'AUTHENTICATOR_APP_TOTP') {
-      const decryptedSecret = this.encryptionUtilsService.decrypt({
+      const decryptedSecret = this.encryptionService.decrypt({
         iv: tempCode.iv,
         encryptedData: tempCode.encryptedData,
         tag: tempCode.tag,
       });
 
-      const verifyAuthenticatorOtpCode = await verify({
+      const verifyAuthenticatorOtpCode = await this.totpService.verify({
         secret: decryptedSecret,
         strategy: 'totp',
         token: verifyMfaInput.otpCode,
+        epochTolerance: [30, 0], // 30 secs tolerance (roughly first previous old code can be used)
       });
 
-      if (!verifyAuthenticatorOtpCode.valid) {
+      if (!verifyAuthenticatorOtpCode) {
         throw new UnprocessableEntityException(
           'Invalid OTP. Check your authenticator app again or request for MFA again.',
           {
@@ -253,7 +255,9 @@ export class UserService {
           totp: {
             create: {
               totp_enabled: true,
-              totp_secret: tempCode.encryptedData // encrypted secret
+              totp_secret_iv: tempCode.iv,
+              totp_secret_tag: tempCode.tag,
+              totp_secret_ciphertext: tempCode.encryptedData, // encrypted secret,
             },
           },
         },

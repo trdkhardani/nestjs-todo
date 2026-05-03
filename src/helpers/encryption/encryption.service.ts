@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 @Injectable()
-export class EncryptionUtilsService {
+export class EncryptionService {
   constructor(private configService: ConfigService) {}
 
   encrypt(plaintext: string) {

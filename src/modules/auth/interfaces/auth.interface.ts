@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify';
-import { UserRole } from 'generated/prisma/enums';
+import { MfaMethods, UserRole } from 'generated/prisma/enums';
 
 export interface RegisterInput {
   username: string;
@@ -31,4 +31,10 @@ export interface UserPayload extends FastifyRequest {
     username: string;
     role: UserRole;
   };
+}
+
+export interface WithMfaInterface {
+  mfaRequired: boolean;
+  mfaToken: string;
+  mfaMethods: MfaMethods[];
 }

@@ -3,10 +3,10 @@ import { UserService } from './users.service';
 import { UserController } from './users.controller';
 import { CacheModule } from 'src/core/cache/cache.module';
 import { QueueModule } from 'src/core/queue/queue.module';
-import { UtilsModule } from 'src/utils/utils.module';
+import { HelpersModule } from 'src/helpers/helpers.module';
 
 @Module({
-  imports: [CacheModule, QueueModule, UtilsModule],
+  imports: [CacheModule, QueueModule, HelpersModule],
   providers: [UserService],
   controllers: [UserController],
   exports: [UserService],

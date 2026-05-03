@@ -6,12 +6,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { QueueModule } from 'src/core/queue/queue.module';
-import { UtilsModule } from 'src/utils/utils.module';
+import { HelpersModule } from 'src/helpers/helpers.module';
+import { MfaService } from './mfa/mfa.service';
+import { MfaController } from './mfa/mfa.controller';
 
 @Module({
   imports: [
     ConfigModule,
-    UtilsModule,
+    HelpersModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -22,8 +24,8 @@ import { UtilsModule } from 'src/utils/utils.module';
     }),
     QueueModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  controllers: [AuthController, MfaController],
+  providers: [AuthService, JwtStrategy, MfaService],
+  exports: [AuthService, MfaService],
 })
 export class AuthModule {}

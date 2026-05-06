@@ -183,6 +183,12 @@ export class AuthService {
       });
     }
 
+    if (!user.user_is_verified) {
+      throw new UnauthorizedException("User's email is not verified yet", {
+        description: 'The Email of the User is not verified yet',
+      });
+    }
+
     if (user.user_mfa_methods.length > 0) {
       const mfaToken = randomBytes(32).toString('base64url');
       const hashedMfaToken = createHash('sha256')
